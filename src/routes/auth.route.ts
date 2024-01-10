@@ -1,5 +1,9 @@
 import express, { Request, Response } from "express";
-import { login, register } from "../controllers/auth.controller";
+import {
+  login,
+  refreshJwtToken,
+  register,
+} from "../controllers/auth.controller";
 import { body } from "express-validator";
 
 const router = express.Router();
@@ -48,4 +52,5 @@ router.post(
   ],
   login
 );
+router.post("/refresh-token", refreshJwtToken);
 export default router;
