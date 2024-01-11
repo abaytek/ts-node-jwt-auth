@@ -1,6 +1,7 @@
 import { NextFunction, Request, Response } from "express";
 import createHttpError from "http-errors";
-import jwt from "jsonwebtoken";
+import jwt, { Jwt, JwtPayload, VerifyOptions } from "jsonwebtoken";
+import { client } from "./redis";
 
 export const generateAccessToken = (userId: any) => {
   const token = jwt.sign(
@@ -8,9 +9,22 @@ export const generateAccessToken = (userId: any) => {
       exp: Math.floor(Date.now() / 1000) + 60 * 60 + 2,
       data: userId,
     },
-    process.env.JWT_SECRET as string
+    process.env.JWT_ACCESS_TOKEN_SECRET as string
   );
   if (!token) createHttpError.InternalServerError();
+  return token;
+};
+export const generateRefreshToken = async (userId: any) => {
+  const token = jwt.sign(
+    {
+      expiresIn: "1y",
+      data: userId,
+    },
+    process.env.JWT_ACCESS_REFRESH_TOKEN_SECRET as string
+  );
+  if (!token) createHttpError.InternalServerError();
+  // save to redis
+  await client.set(userId, token);
   return token;
 };
 
@@ -36,4 +50,17 @@ export const verifyToken = (
       next();
     }
   );
+};
+
+export const verifyRefreshToken = (refreshToken: string) => {
+  let decoded: any;
+  jwt.verify(
+    refreshToken,
+    process.env.JWT_ACCESS_REFRESH_TOKEN_SECRET as string,
+    (err, payload) => {
+      if (err) createHttpError.Unauthorized(err.message);
+      decoded = payload;
+    }
+  );
+  return decoded.data;
 };
