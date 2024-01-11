@@ -3,8 +3,14 @@ import { validationResult } from "express-validator";
 import createHttpError from "http-errors";
 import { prisma } from "../utils/prisma";
 import * as bcrypt from "bcrypt";
-import { generateAccessToken } from "../utils/jwt";
+import {
+  generateAccessToken,
+  generateRefreshToken,
+  verifyRefreshToken,
+} from "../utils/jwt";
 import { errorHandler } from "../utils/errorHandler";
+import { JwtPayload, VerifyOptions } from "jsonwebtoken";
+import { client } from "../utils/redis";
 
 export const register = async (
   req: Request,
@@ -38,7 +44,8 @@ export const register = async (
       },
     });
     const accessToken = generateAccessToken(user.id);
-    res.json({ status: 200, accessToken });
+    const refreshToken = generateRefreshToken(user.id);
+    res.json({ status: 200, accessToken, refreshToken });
   } catch (error) {
     next(error);
   }
@@ -74,7 +81,30 @@ export const login = async (
       next(createHttpError.Unauthorized("Email/password do not match"));
 
     const accessToken = generateAccessToken(user.id);
-    res.json({ status: 200, accessToken });
+    const refreshToken = generateRefreshToken(user.id);
+
+    res.json({ status: 200, accessToken, refreshToken });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const refreshJwtToken = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  const { refreshToken: token } = req.body;
+  try {
+    if (!token) next(createHttpError.Unauthorized());
+
+    const userId = verifyRefreshToken(token);
+    const dbToken = await client.get(userId);
+    if (dbToken === token)
+      return createHttpError.Unauthorized("refresh token is revoked");
+    const accessToken = generateAccessToken(userId);
+    const refreshToken = generateRefreshToken(userId);
+    res.json({ status: 200, accessToken, refreshToken });
   } catch (error) {
     next(error);
   }
