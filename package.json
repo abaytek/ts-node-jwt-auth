@@ -18,7 +18,8 @@
     "express-validator": "^7.0.1",
     "http-errors": "^2.0.0",
     "jsonwebtoken": "^9.0.2",
-    "prisma": "^5.7.1"
+    "prisma": "^5.7.1",
+    "redis": "^4.6.12"
   },
   "devDependencies": {
     "@types/bcrypt": "^5.0.2",

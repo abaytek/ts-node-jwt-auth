@@ -4,6 +4,7 @@ import cors from "cors";
 import authRoute from "./routes/auth.route";
 import createHttpError from "http-errors";
 import { errorHandler } from "./utils/errorHandler";
+import { verifyToken } from "./utils/jwt";
 
 const app = express();
 
@@ -12,6 +13,9 @@ app.use(express.urlencoded({ extended: false }));
 app.use(express.json());
 
 app.use("/api/auth", authRoute);
+app.get("/", verifyToken, (req: Request, res: Response) => {
+  res.send("Hello ");
+});
 
 // 404
 app.use((req: Request, res: Response, next: NextFunction) => {
